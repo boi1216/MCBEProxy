@@ -12,6 +12,9 @@ class DownstreamListener
     /** @var DownstreamSocket $downstream */
     private $downstream;
 
+    /** @var InternetAddress $address */
+    private $address;
+
     /**
      * DownstreamListener constructor.
      * @param DownstreamSocket $socket
@@ -29,11 +32,21 @@ class DownstreamListener
     /**
      * @param string $buffer
      */
-    public function handleRaknet(string $buffer) : void{
+    public function handleRaknet(string $buffer, $address, $port) : void{
          $pid = ord($buffer{0});
          switch($pid){
              case UnconnectedPing::$ID;
+             $this->address = new InternetAddress($address, $port, 4);
 
+             $ping = new UnconnectedPing($buffer);
+             $ping->decode();
+
+             $pong = new UnconnectedPong();
+             $pong->sendPingTime = $ping->sendPingTime;
+             $pong->serverName = $this->getPongInfo();
+             $pong->encode();
+
+             $this->downstream->send($pong->getBuffer());
              break;
          }
     }
