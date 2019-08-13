@@ -1,20 +1,31 @@
 <?php
 
+declare(strict_types=1);
 
 namespace proxy;
 
-
 use proxy\network\DownstreamListener;
 use proxy\network\DownstreamSocket;
+use proxy\plugin\PluginManager;
+use proxy\utils\Logger;
 
-class Server
-{
+/**
+ * Class Server
+ * @package proxy
+ */
+class Server {
 
     /** @var Server $instance */
     public static $instance;
 
     /** @var int $startTime */
     public static $startTime;
+
+    /** @var Logger $logger */
+    private $logger;
+
+    /** @var PluginManager $pluginManager */
+    private $pluginManager;
 
     public $downstreamConnected = false;
     public $upstreamConnected = false;
@@ -32,24 +43,37 @@ class Server
      * Server constructor.
      * @param array $arguments
      */
-    public function __construct(array $arguments)
-    {
+    public function __construct(array $arguments){
         self::$instance = $this;
-        echo 'Starting MCPE Proxy' . PHP_EOL;
+        $this->logger = new Logger("Main Thread");
+        $this->getLogger()->info("Starting proxy server...");
 
         self::$startTime = time();
 
         $this->downstreamListener = new DownstreamListener(new DownstreamSocket("0.0.0.0", 19132));
+        $this->pluginManager = new PluginManager($this);
 
-        while($this->running){
-            try{
-               $this->downstreamListener->tick();
+        $this->getPluginManager()->loadPlugins("plugins");
 
-            }catch (\Exception $ingore){}
+        while ($this->running) {
+            try {
+                $this->downstreamListener->tick();
+            }
+            catch (\Exception $ingore) {}
         }
     }
 
+    /**
+     * @return PluginManager
+     */
+    public function getPluginManager(): PluginManager {
+        return $this->pluginManager;
+    }
 
-
-
+    /**
+     * @return Logger
+     */
+    public function getLogger(): Logger {
+        return $this->logger;
+    }
 }

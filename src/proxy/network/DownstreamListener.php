@@ -1,10 +1,16 @@
 <?php
 
-
 namespace proxy\network;
 
-
 use proxy\Server;
+use raklib\protocol\IncompatibleProtocolVersion;
+use raklib\protocol\OpenConnectionReply1;
+use raklib\protocol\OpenConnectionReply2;
+use raklib\protocol\OpenConnectionRequest1;
+use raklib\protocol\OpenConnectionRequest2;
+use raklib\protocol\UnconnectedPing;
+use raklib\protocol\UnconnectedPong;
+use raklib\utils\InternetAddress;
 
 class DownstreamListener
 {
@@ -42,7 +48,8 @@ class DownstreamListener
              $ping->decode();
 
              $pong = new UnconnectedPong();
-             $pong->sendPingTime = $ping->sendPingTime;
+             //$pong->sendPingTime = $ping->sendPingTime; Bylo to asi blbě :D
+             $pong->sendTime = $ping->sendTime; // <----
              $pong->serverName = $this->getPongInfo();
              $pong->encode();
 

@@ -1,24 +1,25 @@
 <?php
 
 
-namespace proxy{
+namespace proxy {
 
-    $error = null;
-    if(phpversion() <= 7.2){
-        $error = "PHP version need to be higher than 7.2";
-    }
+    define("COMPOSER", "vendor/autoload.php");
 
-    $extensions = array('pthreads', 'sockets', 'zlib', 'yaml');
+    require COMPOSER;
 
-    $missing = '';
-    foreach($extensions as $extension){
-        if(!extension_loaded($extension)){
-            $missing .= $extension . " ";
+    $extensions = ['pthreads', 'sockets', 'zlib', 'yaml'];
+    $notLoaded = [];
+    foreach ($extensions as $extension) {
+        if(!extension_loaded($extension)) {
+            $notLoaded[] = $extension;
         }
     }
-    if(strlen($missing) > 0)$error = "Missing PHP extensions: " . $missing;
 
-    new Server([]/** CLI ARGUMENTS */);
+    if(!empty($notLoaded)) {
+        echo "Could not start proxy, " . implode(", ", $notLoaded) . " extension(s) wasn't found.\n";
+        sleep(10);
+        exit();
+    }
 
-
+    new Server([]);
 }
