@@ -46,7 +46,41 @@ class DownstreamListener
              $pong->serverName = $this->getPongInfo();
              $pong->encode();
 
-             $this->downstream->send($pong->getBuffer());
+             $this->downstream->send($pong->getBuffer(), $this->address->ip, $this->address->port);
+             break;
+             case OpenConnectionRequest1::$ID;
+             $request = new OpenConnectionRequest1($buffer);
+             $request->decode();
+
+             if($request->protocol !== 10){
+                 $packet = new IncompatibleProtocolVersion();
+                 $packet->protocolVersion = 10;
+                 $packet->serverId = 1;
+                 $packet->encode();
+
+                 $this->downstream->send($packet->getBuffer(), $this->address->ip, $this->address->port);
+                 break;
+             }
+
+             $reply = new OpenConnectionReply1();
+             $reply->mtuSize = $request->mtuSize + 28;
+             $reply->serverId = 1;
+
+             $this->downstream->send($reply->getBuffer(), $this->address->ip, $this->address->port);
+             break;
+             case OpenConnectionRequest2::$ID;
+             $request = new OpenConnectionRequest2($buffer);
+             $request->decode();
+
+             $mtuSize = min($request->mtuSize, 5000);
+             $reply = new OpenConnectionReply2();
+             $reply->mtuSize = $mtuSize;
+             $reply->serverID = 1;
+             $reply->clientAddress = $this->address;
+             $reply->encode();
+
+             $this->downstream->send($reply->getBuffer(), $this->address->ip, $this->address->port);
+
              break;
          }
     }
