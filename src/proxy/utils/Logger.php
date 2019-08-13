@@ -25,13 +25,21 @@ class Logger {
      * @param string $message
      */
     public function info(string $message) {
-        echo $this->getPrefix() . $message . "\n";
+        echo $this->getPrefix("Info") . $message . "\n";
     }
 
     /**
+     * @param string $message
+     */
+    public function error(string $message) {
+        echo $this->getPrefix("Error") . $message . "\n";
+    }
+
+    /**
+     * @param string $notice
      * @return string
      */
-    private function getPrefix() {
-        return "[" . gmdate("H:i:s") . "] [$this->threadName] ";
+    protected function getPrefix(string $notice): string {
+        return "[" . gmdate("H:i:s") . "] [$this->threadName] [$notice] ";
     }
 }

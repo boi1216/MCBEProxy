@@ -1,10 +1,11 @@
 <?php
 
-
 namespace proxy;
 
-
-class ConsoleReader extends \Thread
-{
+/**
+ * Class ConsoleReader
+ * @package proxy
+ */
+class ConsoleReader extends \Thread {
 
 }

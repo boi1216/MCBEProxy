@@ -16,7 +16,7 @@ use proxy\utils\Logger;
 class Server {
 
     /** @var Server $instance */
-    public static $instance;
+    private static $instance;
 
     /** @var int $startTime */
     public static $startTime;
@@ -42,18 +42,19 @@ class Server {
     /**
      * Server constructor.
      * @param array $arguments
+     * @throws \Exception
      */
     public function __construct(array $arguments){
+        self::$startTime = microtime(true);
         self::$instance = $this;
         $this->logger = new Logger("Main Thread");
         $this->getLogger()->info("Starting proxy server...");
-
-        self::$startTime = time();
 
         $this->downstreamListener = new DownstreamListener(new DownstreamSocket("0.0.0.0", 19132));
         $this->pluginManager = new PluginManager($this);
 
         $this->getPluginManager()->loadPlugins("plugins");
+        $this->getPluginManager()->enablePlugins();
 
         while ($this->running) {
             try {
@@ -61,6 +62,10 @@ class Server {
             }
             catch (\Exception $ingore) {}
         }
+    }
+
+    public static function getInstance(): Server {
+        return self::$instance;
     }
 
     /**
