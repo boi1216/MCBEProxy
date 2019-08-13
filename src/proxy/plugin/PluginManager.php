@@ -105,6 +105,14 @@ class PluginManager {
         }
     }
 
+    public function disablePlugins() {
+        foreach ($this->plugins as $name => $plugin) {
+            $this->getServer()->getLogger()->info("Disabling plugin {$name}!");
+            $plugin->onDisable();
+            unset($plugin);
+        }
+    }
+
     /**
      * @return Server
      */

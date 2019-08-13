@@ -1,0 +1,6 @@
+name: DefaultCommands
+author: VixikCZ
+api-version: 1.0.0
+main: vixikhd\defaultcommands\DefaultCommands
+description: Adds default commands to MCPE Proxy
+version: 1.0.0
