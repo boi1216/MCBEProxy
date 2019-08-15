@@ -23,6 +23,9 @@ class UpstreamListener
         $packet = new UnconnectedPing();
         $packet->sendPingTime = time();
         $packet->clientId = -1;
+        $packet->encode();
+
+        $this->upstream->send($packet->getBuffer(), $this->upstream->getTarget()->ip, $this->upstream->getTarget()->port);
     }
 
     public function tick() : void{
@@ -39,7 +42,9 @@ class UpstreamListener
     public function handleRaknet(string $buffer, $address, $port) : void{
         $pid = ord($buffer{0});
         switch($pid){
-            //TODO: Full raknet login
+            case UnconnectedPong::$ID;
+            
+            break;
         }
     }
 

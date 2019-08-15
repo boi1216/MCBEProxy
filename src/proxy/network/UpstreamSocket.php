@@ -70,4 +70,11 @@ class UpstreamSocket {
         return $this->address;
     }
 
+    /**
+     * @return InternetAddress
+     */
+    public function getTarget() : InternetAddress{
+        return $this->target;
+    }
+
 }

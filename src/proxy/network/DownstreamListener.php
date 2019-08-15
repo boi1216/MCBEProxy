@@ -2,6 +2,7 @@
 
 namespace proxy\network;
 
+use proxy\network\encryption\Encryption;
 use proxy\Server;
 use raklib\protocol\IncompatibleProtocolVersion;
 use raklib\protocol\OpenConnectionReply1;
@@ -25,6 +26,9 @@ class DownstreamListener
 
     /** @var NetworkCipher $networkCipher */
     private $networkCipher;
+
+    /** @var Encryption $encryption */
+    private $encryption;
 
     /**
      * DownstreamListener constructor.
@@ -96,6 +100,9 @@ class DownstreamListener
 
              $this->downstream->send($reply->getBuffer(), $this->address->ip, $this->address->port);
 
+             break;
+             case NewIncommingConnection::$ID;
+             //Read MCPE -> Login
              break;
          }
     }
