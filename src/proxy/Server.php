@@ -16,6 +16,9 @@ use proxy\utils\Logger;
  */
 class Server {
 
+    const VERSION = "1.0";
+    const CODENAME = "Nyancat";
+
     /** @var Server $instance */
     private static $instance;
 
@@ -43,6 +46,9 @@ class Server {
     /** @var int $lastTickTime */
     private $lastTickTime;
 
+    /** @var bool $jwtMode */
+    private $useEncryption = false;
+
     /**
      * Server constructor.
      * @param array $arguments
@@ -51,6 +57,12 @@ class Server {
     public function __construct(array $arguments){
         self::$startTime = microtime(true);
         self::$instance = $this;
+
+        foreach($arguments as $position => $argument){
+            if($position == 0)continue;
+            if($argument == "encryption")$this->useEncryption = true;
+        }
+
         $this->logger = new Logger("Main Thread");
         $this->getLogger()->info("Starting proxy server...");
 
@@ -115,5 +127,12 @@ class Server {
      */
     public static function getInstance(): Server {
         return self::$instance;
+    }
+
+    /**
+     * @return bool
+     */
+    public function encryptionEnabled() : bool{
+        return $this->useEncryption;
     }
 }

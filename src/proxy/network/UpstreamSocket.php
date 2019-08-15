@@ -6,42 +6,35 @@ use proxy\Server;
 use raklib\utils\InternetAddress;
 
 /**
- * Class DownstreamSocket
+ * Class UpstreamSocket
  * @package proxy\network
  */
-class DownstreamSocket {
+class UpstreamSocket {
 
     /** @var InternetAddress $address */
     private $address;
 
+    /** @var InternetAddress $target */
+    private $target;
+
     /** @var resource $socket */
     private $socket;
 
-    /**
-     * DownstreamSocket constructor.
-     * @param string $ip
-     * @param int $port
-     * @throws \Exception
-     */
-    public function __construct(string $ip, int $port) {
-         $this->address = new InternetAddress($ip, $port, 4);
-         $this->socket = socket_create(AF_INET, SOCK_DGRAM, SOL_UDP);
-         $this->bind($this->getAddress());
+    public function __construct(string $tIP, int $tPORT) {
+        $this->address = new InternetAddress("0.0.0.0", rand(10000, 50000), 4);
+        $this->target = new InternetAddress($tIP, $tPORT, 4);
+        $this->socket = socket_create(AF_INET, SOCK_DGRAM, SOL_UDP);
+
+        $this->connect($this->target);
     }
 
     /**
      * @param InternetAddress $address
      * @throws \Exception
      */
-    public function bind(InternetAddress $address) {
-        if(socket_bind($this->socket, $address->ip, $address->port)) {
-            Server::getInstance()->getLogger()->info('Downstream bound to ' . $address->ip . ':' . $address->port);
-        }
-        else {
-            Server::getInstance()->getLogger()->error("Could not bind to {$address->ip}:{$address->port}, maybe some server is already running on that port?");
-            Server::getInstance()->getLogger()->error("Shutting down the server in 10 sec.");
-            sleep(10);
-            Server::getInstance()->shutdown();
+    public function connect(InternetAddress $address) {
+        if(!socket_connect($this->socket, $this->target->ip, $this->target->port)){
+            throw new \Exception("Failed to create connection with " . $this->target->ip . ":" . $this->target->port);
         }
     }
 

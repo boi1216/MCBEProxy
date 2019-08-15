@@ -12,6 +12,8 @@ use raklib\protocol\UnconnectedPing;
 use raklib\protocol\UnconnectedPong;
 use raklib\utils\InternetAddress;
 
+use pocketmine\network\mcpe\encryption\NetworkCipher;
+
 class DownstreamListener
 {
 
@@ -21,6 +23,9 @@ class DownstreamListener
     /** @var InternetAddress $address */
     private $address;
 
+    /** @var NetworkCipher $networkCipher */
+    private $networkCipher;
+
     /**
      * DownstreamListener constructor.
      * @param DownstreamSocket $socket
@@ -28,11 +33,14 @@ class DownstreamListener
     public function __construct(DownstreamSocket $socket)
     {
         $this->downstream = $socket;
+
+        if(Server::getInstance()->encryptionEnabled()){
+            $this->networkCipher = new NetworkCipher(Server::CODENAME);
+        }
     }
 
     public function tick() : void{
         $this->downstream->receive($buffer, $address, $port);
-
     }
 
     /**
@@ -106,7 +114,7 @@ class DownstreamListener
                     rtrim(addcslashes("MCPE Proxy", ";"), '\\'),
                     354,
                     "1.11",
-                    Server::$instance->downstreamConnected ? 1 : 0,
+                    Server::getInstance()->downstreamConnected ? 1 : 0,
                     1,
                     1,
                     'MCBE Proxy',

@@ -21,5 +21,5 @@ namespace proxy {
         exit();
     }
 
-    new Server([]);
+    new Server($argv);
 }
