@@ -12,7 +12,19 @@ use proxy\scheduler\Task;
  */
 class BroadcastTask extends Task {
 
+    /** @var TaskTest $plugin */
+    public $plugin;
+
+    /**
+     * BroadcastTask constructor.
+     * @param TaskTest $plugin
+     */
+    public function __construct(TaskTest $plugin) {
+        $this->plugin = $plugin;
+        parent::__construct(20 * 60 * 5); // every 5 minutes
+    }
+
     public function onRun(): void {
-        $this->getServer()->getLogger()->info("You are using broxy by @boi1216 & @viix");
+        $this->plugin->getLogger()->info("You are using broxy by @boi1216 & @viix");
     }
 }

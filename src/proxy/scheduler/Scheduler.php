@@ -15,20 +15,14 @@ class Scheduler {
     /** @var Server $server */
     private $server;
 
-    /** @var float $lastTick */
-    private $lastTick = null;
-
-    /** @var int $currentTick */
-    private $currentTick = 1;
+    /** @var int $lastTick */
+    private $lastTick = 0;
 
     /** @var int $scheduledTaskCount */
     private $scheduledTaskCount = 0;
 
-    /** @var array $repeatingTasks */
+    /** @var Task[] $repeatingTasks */
     private $repeatingTasks = [];
-
-    /** @var Task[] $tasks */
-    private $tasks = [];
 
     /**
      * Scheduler constructor.
@@ -36,42 +30,24 @@ class Scheduler {
      */
     public function __construct(Server $server) {
         $this->server = $server;
-        $this->lastTick = microtime(true);
     }
 
     /**
      * @param Task $task
      */
-    public function scheduleTask(Task $task) {
-        $this->tasks[++$this->scheduledTaskCount] = $task->schedule($this->getServer(), $this->scheduledTaskCount);
-    }
-
-    /**
-     * @param Task $task
-     * @param int $period
-     */
-    public function scheduleRepeatingTask(Task $task, int $period = 20) {
-        $this->repeatingTasks[++$this->scheduledTaskCount] = $task->schedule($this->getServer(), $this->scheduledTaskCount, $period);
+    public function scheduleRepeatingTask(Task $task) {
+        $this->repeatingTasks[++$this->scheduledTaskCount] = $task;
     }
 
     public function tick() {
-        if(microtime(true)-$this->lastTick >= 0.05) {
-            foreach ($this->tasks as $index => $task) {
-                $task->onRun();
-                unset($this->tasks[$index]);
-            }
-            foreach ($this->repeatingTasks as $index => $task) {
-                if($this->currentTick % $task->getPeriod() == 0) {
+        if(microtime(true) - Server::$startTime >= $this->lastTick / 20) {
+            foreach ($this->repeatingTasks as $id => $task) {
+                if($this->lastTick % $task->getPeriod() === 0){
                     $task->onRun();
                 }
             }
 
-            $this->lastTick = microtime(true);
-            $this->currentTick++;
-
-            if($this->currentTick == 20) {
-                $this->currentTick = 1;
-            }
+            $this->lastTick++;
         }
     }
 
