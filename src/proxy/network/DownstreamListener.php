@@ -21,6 +21,9 @@ class DownstreamListener
     /** @var DownstreamSocket $downstream */
     private $downstream;
 
+    /** @var Server $server */
+    private $server;
+
     /** @var InternetAddress $address */
     private $address;
 
@@ -30,13 +33,29 @@ class DownstreamListener
     /** @var Encryption $encryption */
     private $encryption;
 
+    /** @var bool $raknetDone */
+    private $raknetDone = false;
+
+    /** @var array $ackQueue */
+    private $ackQueue = array();
+
+    /** @var array $nakQueue */
+    private $nakQueue = array();
+
+    /** @var int $sendSeqNumber */
+    private $sendSeqNumber = 0;
+
+    /** @var array $splitPackets */
+    private $splitPackets = array();
+
     /**
      * DownstreamListener constructor.
      * @param DownstreamSocket $socket
      */
-    public function __construct(DownstreamSocket $socket)
+    public function __construct(DownstreamSocket $socket, Server $server)
     {
         $this->downstream = $socket;
+        $this->server = $server;
 
         if(Server::getInstance()->encryptionEnabled()){
             $this->networkCipher = new NetworkCipher(Server::CODENAME);
@@ -45,6 +64,9 @@ class DownstreamListener
 
     public function tick() : void{
         $this->downstream->receive($buffer, $address, $port);
+
+        if($this->raknetDone)$this->handleMCPE($buffer, $address, $port);
+        $this->handleRaknet($buffer, $address, $port);
     }
 
     /**
@@ -99,15 +121,17 @@ class DownstreamListener
              $reply->encode();
 
              $this->downstream->send($reply->getBuffer(), $this->address->ip, $this->address->port);
-
-             break;
-             case NewIncommingConnection::$ID;
-             //Read MCPE -> Login
+             $this->raknetDone = true;
              break;
          }
     }
 
-    public function handleMCPE(string $buffer) : void{
+    /**
+     * @param string $buffer
+     * @param string $address
+     * @param int $port
+     */
+    public function handleMCPE(string $buffer, string $address, int $port) : void{
 
     }
 

@@ -10,6 +10,7 @@ use Mdanter\Ecc\Serializer\PrivateKey\DerPrivateKeySerializer;
 use Mdanter\Ecc\Serializer\PrivateKey\PemPrivateKeySerializer;
 use Mdanter\Ecc\Serializer\PublicKey\DerPublicKeySerializer;
 use Mdanter\Ecc\Serializer\Signature\DerSignatureSerializer;
+use proxy\utils\JWT;
 
 
 class Encryption
@@ -48,21 +49,10 @@ class Encryption
      * @return string
      */
     private function generateServerHandshakeJwt(PrivateKeyInterface $serverPriv, string $salt) : string{
-        $jwtBody = self::b64UrlEncode(json_encode([
-                    "x5u" => base64_encode((new DerPublicKeySerializer())->serialize($serverPriv->getPublicKey())),
-                    "alg" => "ES384"
-                ])
-            ) . "." . self::b64UrlEncode(json_encode([
-                    "salt" => base64_encode($salt)
-                ])
-            );
-        openssl_sign($jwtBody, $sig, (new PemPrivateKeySerializer(new DerPrivateKeySerializer()))->serialize($serverPriv), OPENSSL_ALGO_SHA384);
-        $decodedSig = (new DerSignatureSerializer())->parse($sig);
-        $jwtSig = self::b64UrlEncode(
-            hex2bin(str_pad(gmp_strval($decodedSig->getR(), 16), 96, "0", STR_PAD_LEFT)) .
-            hex2bin(str_pad(gmp_strval($decodedSig->getS(), 16), 96, "0", STR_PAD_LEFT))
-        );
-        return "$jwtBody.$jwtSig";
+        return JWT::encode($serverPriv, [
+            "x5u" => base64_encode((new DerPublicKeySerializer())->serialize($serverPriv->getPublicKey())),
+            "alg" => "ES384"
+        ]);
     }
 
     /**
