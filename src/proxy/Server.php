@@ -8,6 +8,8 @@ use proxy\command\CommandMap;
 use proxy\network\DownstreamListener;
 use proxy\network\DownstreamSocket;
 use proxy\plugin\PluginManager;
+use proxy\scheduler\Scheduler;
+use proxy\scheduler\Task;
 use proxy\utils\Logger;
 
 /**
@@ -34,6 +36,9 @@ class Server {
     /** @var CommandMap $commandMap */
     private $commandMap;
 
+    /** @var Scheduler $scheduler */
+    private $scheduler;
+
     public $downstreamConnected = false;
     public $upstreamConnected = false;
 
@@ -42,9 +47,6 @@ class Server {
 
     /** @var bool $running */
     public $running = true;
-
-    /** @var int $lastTickTime */
-    private $lastTickTime;
 
     /** @var bool $jwtMode */
     private $useEncryption = false;
@@ -70,6 +72,7 @@ class Server {
         $this->downstreamListener = new DownstreamListener(new DownstreamSocket("0.0.0.0", 19132));
         $this->pluginManager = new PluginManager($this);
         $this->commandMap = new CommandMap($this);
+        $this->scheduler = new Scheduler($this);
 
         $this->getPluginManager()->loadPlugins("plugins");
         $this->getPluginManager()->enablePlugins();
@@ -91,8 +94,9 @@ class Server {
     public function tickProcessor() {
         while ($this->running) {
             try {
-                //$this->downstreamListener->tick();
+                //$this->downstreamListener->tick(); dej to na jinou threadu, tady by blokovalo tasky a commandy
                 $this->getCommandMap()->tick();
+                $this->getScheduler()->tick();
             }
             catch (\Exception $exception) {
                 $this->getLogger()->error($exception->getMessage());
@@ -113,6 +117,13 @@ class Server {
      */
     public function getPluginManager(): PluginManager {
         return $this->pluginManager;
+    }
+
+    /**
+     * @return Scheduler
+     */
+    public function getScheduler(): Scheduler {
+        return $this->scheduler;
     }
 
     /**

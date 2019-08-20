@@ -1,6 +1,6 @@
-name: ExamplePlugin
+name: TaskTest
 author: VixikCZ
 description: Example description
 version: 1.0.0
 api-version: 1.0.0
-main: proxy\exampleplugin\ExamplePlugin
+main: vixikhd\tasktest\TaskTest
