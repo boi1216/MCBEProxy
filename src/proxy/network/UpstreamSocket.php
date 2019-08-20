@@ -18,7 +18,7 @@ class UpstreamSocket {
     private $target;
 
     /** @var resource $socket */
-    private $socket;
+    public $socket;
 
     public function __construct(string $tIP, int $tPORT) {
         $this->address = new InternetAddress("0.0.0.0", rand(10000, 50000), 4);

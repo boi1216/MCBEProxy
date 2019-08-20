@@ -3,6 +3,7 @@
 namespace proxy\network;
 
 use proxy\network\encryption\Encryption;
+use proxy\network\mcpe\LoginPacket;
 use proxy\Server;
 use raklib\protocol\IncompatibleProtocolVersion;
 use raklib\protocol\OpenConnectionReply1;
@@ -30,23 +31,20 @@ class DownstreamListener
     /** @var NetworkCipher $networkCipher */
     private $networkCipher;
 
+    /** @var MessageSender $messageSender */
+    private $messageSender;
+
     /** @var Encryption $encryption */
     private $encryption;
 
     /** @var bool $raknetDone */
     private $raknetDone = false;
 
-    /** @var array $ackQueue */
-    private $ackQueue = array();
+    /** @var bool $decryptPackets */
+    private $decryptPackets = false;
 
-    /** @var array $nakQueue */
-    private $nakQueue = array();
-
-    /** @var int $sendSeqNumber */
-    private $sendSeqNumber = 0;
-
-    /** @var array $splitPackets */
-    private $splitPackets = array();
+    /** @var LoginPacket $cachedLogin */
+    private $cachedLogin;
 
     /**
      * DownstreamListener constructor.
@@ -82,8 +80,7 @@ class DownstreamListener
              $ping->decode();
 
              $pong = new UnconnectedPong();
-             //$pong->sendPingTime = $ping->sendPingTime; Bylo to asi blbě :D
-             $pong->sendTime = $ping->sendTime; // <----
+             $pong->sendTime = $ping->sendTime;
              $pong->serverName = $this->getPongInfo();
              $pong->encode();
 
@@ -122,6 +119,8 @@ class DownstreamListener
 
              $this->downstream->send($reply->getBuffer(), $this->address->ip, $this->address->port);
              $this->raknetDone = true;
+
+             $this->messageSender = new MessageSender(new InternetAddress($address, $port, 4), $this->downstream->socket);
              break;
          }
     }
@@ -132,7 +131,46 @@ class DownstreamListener
      * @param int $port
      */
     public function handleMCPE(string $buffer, string $address, int $port) : void{
+        $pid = ord($buffer{0});
+        if (($pid & Datagram::BITFLAG_VALID) !== 0) {
+            if ($pid & Datagram::BITFLAG_ACK) {
+                //TODO: implement this
+            } elseif ($pid & Datagram::BITFLAG_NAK) {
+               //TODO: implement this
+            } else {
+                if (($datagram = new Datagram($buffer)) instanceof Datagram) {
+                    $datagram->decode();
+                    foreach ($datagram->packets as $packet) {
+                        if ($packet->hasSplit) {
+                            $split = $this->decodeSplit($packet);
 
+                            if ($split !== null) {
+                                $packet = $split;
+                            }
+
+                            $payload = substr($packet->getBuffer(), 1);
+
+                            if($this->networkCipher !== null && $this->decryptPackets){
+                                $payload = $this->networkCipher->decrypt($payload);
+                            }
+
+                            $stream = new PacketBatch(Zlib::decompress($payload));
+                            $mcpe = $stream->getPacket();
+
+                            switch($mcpe::$NETWORK_ID){
+                                case LoginPacket::$NETWORK_ID;
+                                $mcpe->decode();
+
+                                $this->cachedLogin = $mcpe;
+                                break;
+                            }
+
+                        }
+
+                    }
+                }
+            }
+        }
     }
 
     /**

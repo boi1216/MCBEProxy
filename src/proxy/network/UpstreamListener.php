@@ -4,6 +4,7 @@
 namespace proxy\network;
 
 
+use proxy\network\mcpe\LoginPacket;
 use proxy\Server;
 
 class UpstreamListener
@@ -15,6 +16,9 @@ class UpstreamListener
     /** @var Server $server */
     private $server;
 
+    /** @var MessageSender $messageSender */
+    private $messageSender;
+
 
     /**
      * UpstreamListener constructor.
@@ -25,6 +29,9 @@ class UpstreamListener
     {
         $this->upstream = $socket;
         $this->server = $server;
+
+        $this->messageSender = new MessageSender($this->upstream->getTarget(), $this->upstream->socket);
+
     }
 
     public function startLogin() : void{
@@ -81,6 +88,7 @@ class UpstreamListener
             $datagram->encode(); //TODO: move this
 
             $this->upstream->send($datagram->getBuffer(), $address, $port);
+
             break;
         }
     }

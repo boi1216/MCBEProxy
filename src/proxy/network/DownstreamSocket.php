@@ -15,7 +15,7 @@ class DownstreamSocket {
     private $address;
 
     /** @var resource $socket */
-    private $socket;
+    public $socket;
 
     /**
      * DownstreamSocket constructor.
