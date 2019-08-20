@@ -51,9 +51,9 @@ class DownstreamListener
     /**
      * DownstreamListener constructor.
      * @param DownstreamSocket $socket
+     * @param Server $server
      */
-    public function __construct(DownstreamSocket $socket, Server $server)
-    {
+    public function __construct(DownstreamSocket $socket, Server $server) {
         $this->downstream = $socket;
         $this->server = $server;
 
@@ -62,7 +62,7 @@ class DownstreamListener
         }
     }
 
-    public function tick() : void{
+    public function tick(): void {
         $this->downstream->receive($buffer, $address, $port);
 
         if($this->raknetDone)$this->handleMCPE($buffer, $address, $port);
@@ -72,7 +72,7 @@ class DownstreamListener
     /**
      * @param string $buffer
      */
-    public function handleRaknet(string $buffer, $address, $port) : void{
+    public function handleRaknet(string $buffer, $address, $port): void {
          $pid = ord($buffer{0});
          switch($pid){
              case UnconnectedPing::$ID;

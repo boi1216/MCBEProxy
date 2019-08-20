@@ -13,7 +13,8 @@ use proxy\plugin\PluginBase;
 class TaskTest extends PluginBase {
 
     public function onEnable() {
-
+        require_once "plugins/TaskTest/src/vixikhd/tasktest/BroadcastTask.php";
+        $this->getServer()->getScheduler()->scheduleRepeatingTask(new BroadcastTask(), 20);
     }
 
     public function onDisable() {
