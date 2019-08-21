@@ -21,7 +21,7 @@ class PluginLogger extends Logger {
      */
     public function __construct(string $pluginName) {
         $this->pluginName = $pluginName;
-        parent::__construct("Main thread"); // Plugins should use logger just on main thread
+        parent::__construct("Main Thread"); // Plugins should use logger just on main thread
     }
 
     /**

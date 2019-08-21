@@ -94,7 +94,7 @@ class PluginManager {
         }
 
         $this->plugins[$name] = $plugin;
-        $this->getServer()->getLogger()->info("Loading plugin {$name}");
+       // $this->getServer()->getLogger()->info("Loading plugin {$name}");
         return true;
     }
 

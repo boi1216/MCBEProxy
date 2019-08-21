@@ -16,7 +16,7 @@ class JWT
      * @param string $data
      * @return string
      */
-    private static function b64UrlEncode(string $data) : string{
+    public static function b64UrlEncode(string $data) : string{
         return rtrim(strtr(base64_encode($data), '+/', '-_'), '=');
     }
 
@@ -24,7 +24,7 @@ class JWT
      * @param $data
      * @return string
      */
-    private static function b64UrlDecode($data) : string{
+    protected static function b64UrlDecode($data) : string{
         return base64_decode(str_pad(strtr($data, '-_', '+/'), strlen($data) % 4, '=', STR_PAD_RIGHT));
     }
 
@@ -32,7 +32,7 @@ class JWT
      * @param array $data
      * @return string
      */
-    private static function encodePart(array $data) : string{
+    public static function encodePart(array $data) : string{
         return self::b64UrlEncode(json_encode($data));
     }
 

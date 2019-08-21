@@ -9,7 +9,6 @@ use proxy\network\DownstreamListener;
 use proxy\network\DownstreamSocket;
 use proxy\plugin\PluginManager;
 use proxy\scheduler\Scheduler;
-use proxy\scheduler\Task;
 use proxy\utils\Logger;
 
 /**
@@ -39,7 +38,10 @@ class Server {
     /** @var Scheduler $scheduler */
     private $scheduler;
 
+    /** @var bool $downstreamConnected */
     public $downstreamConnected = false;
+
+    /** @var bool $upstreamConnected */
     public $upstreamConnected = false;
 
     /** @var DownstreamListener $downstreamListener */
@@ -94,7 +96,7 @@ class Server {
     public function tickProcessor() {
         while ($this->running) {
             try {
-                //$this->downstreamListener->tick(); dej to na jinou threadu, tady by blokovalo tasky a commandy
+                $this->downstreamListener->tick();
                 $this->getCommandMap()->tick();
                 $this->getScheduler()->tick();
             }

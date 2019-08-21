@@ -4,7 +4,18 @@
 namespace proxy\network;
 
 
+use proxy\network\mcpe\LoginPacket;
 use proxy\Server;
+use raklib\protocol\ConnectionRequest;
+use raklib\protocol\Datagram;
+use raklib\protocol\EncapsulatedPacket;
+use raklib\protocol\OpenConnectionReply1;
+use raklib\protocol\OpenConnectionReply2;
+use raklib\protocol\OpenConnectionRequest1;
+use raklib\protocol\OpenConnectionRequest2;
+use raklib\protocol\UnconnectedPing;
+use raklib\protocol\UnconnectedPong;
+use raklib\utils\InternetAddress;
 
 class UpstreamListener
 {
@@ -14,6 +25,9 @@ class UpstreamListener
 
     /** @var Server $server */
     private $server;
+
+    /** @var MessageSender $messageSender */
+    private $messageSender;
 
 
     /**
@@ -25,6 +39,9 @@ class UpstreamListener
     {
         $this->upstream = $socket;
         $this->server = $server;
+
+        $this->messageSender = new MessageSender($this->upstream->getTarget(), $this->upstream->socket);
+
     }
 
     public function startLogin() : void{
@@ -60,7 +77,7 @@ class UpstreamListener
             case OpenConnectionReply1::$ID;
             $opc = new OpenConnectionRequest2();
             $opc->mtuSize = 576;
-            $opc->serverAddress = $this->sideConnection->serverAddress;
+            $opc->serverAddress = new InternetAddress("0.0.0.0", 19132, 4);
             $opc->clientID = -1;
             $opc->encode();
 
@@ -81,6 +98,7 @@ class UpstreamListener
             $datagram->encode(); //TODO: move this
 
             $this->upstream->send($datagram->getBuffer(), $address, $port);
+
             break;
         }
     }
