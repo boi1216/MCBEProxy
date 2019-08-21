@@ -1,0 +1,1 @@
+bin\php\php.exe start.php

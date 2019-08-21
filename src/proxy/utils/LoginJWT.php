@@ -4,7 +4,7 @@
 namespace proxy\utils;
 
 
-class LoginJWT
+class LoginJWT extends JWT
 {
 
     /**
@@ -14,7 +14,7 @@ class LoginJWT
     public static function fromArray(string $arrayJWT) : string{
          $i = 0;
          foreach($arrayJWT["chain"] as $chain){
-             $arrayJWT["chain"][$i] = JWT::b64UrlEncode($chain);
+             $arrayJWT["chain"][$i] = self::b64UrlEncode($chain);
              $i++;
          }
          return json_encode($arrayJWT);

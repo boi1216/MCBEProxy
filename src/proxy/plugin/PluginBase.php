@@ -46,6 +46,8 @@ abstract class PluginBase implements PluginInterface {
         $this->description = $description;
         $this->server = $server;
         $this->logger = new PluginLogger($this->getName());
+
+
     }
 
     /**

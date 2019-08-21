@@ -24,7 +24,7 @@ class JWT
      * @param $data
      * @return string
      */
-    private static function b64UrlDecode($data) : string{
+    protected static function b64UrlDecode($data) : string{
         return base64_decode(str_pad(strtr($data, '-_', '+/'), strlen($data) % 4, '=', STR_PAD_RIGHT));
     }
 

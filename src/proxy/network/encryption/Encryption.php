@@ -54,13 +54,4 @@ class Encryption
             "alg" => "ES384"
         ]);
     }
-
-    /**
-     * @param string $str
-     * @return string
-     */
-    private static function b64UrlEncode(string $str) : string{
-        return rtrim(strtr(base64_encode($str), '+/', '-_'), '=');
-    }
-
 }

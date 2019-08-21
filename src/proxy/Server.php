@@ -67,7 +67,7 @@ class Server {
         $this->getLogger()->info("Starting proxy server...");
 
         ThreadManager::init();
-        $this->downstreamListener = new DownstreamListener(new DownstreamSocket("0.0.0.0", 19132));
+        $this->downstreamListener = new DownstreamListener(new DownstreamSocket("0.0.0.0", 19132), $this);
         $this->pluginManager = new PluginManager($this);
         $this->commandMap = new CommandMap($this);
 
@@ -91,7 +91,7 @@ class Server {
     public function tickProcessor() {
         while ($this->running) {
             try {
-                //$this->downstreamListener->tick();
+                $this->downstreamListener->tick();
                 $this->getCommandMap()->tick();
             }
             catch (\Exception $exception) {
