@@ -27,6 +27,8 @@ class DownstreamSocket {
          $this->address = new InternetAddress($ip, $port, 4);
          $this->socket = socket_create(AF_INET, SOCK_DGRAM, SOL_UDP);
          $this->bind($this->getAddress());
+
+         socket_set_nonblock($this->socket);
     }
 
     /**

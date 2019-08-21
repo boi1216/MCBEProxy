@@ -2,17 +2,26 @@
 
 namespace proxy\network;
 
+use pocketmine\network\mcpe\compression\Zlib;
+use pocketmine\network\mcpe\PacketBatch;
+use pocketmine\utils\Binary;
 use proxy\network\encryption\Encryption;
 use proxy\network\mcpe\LoginPacket;
 use proxy\Server;
+use raklib\protocol\ConnectionRequest;
+use raklib\protocol\ConnectionRequestAccepted;
+use raklib\protocol\EncapsulatedPacket;
 use raklib\protocol\IncompatibleProtocolVersion;
+use raklib\protocol\NewIncomingConnection;
 use raklib\protocol\OpenConnectionReply1;
 use raklib\protocol\OpenConnectionReply2;
 use raklib\protocol\OpenConnectionRequest1;
 use raklib\protocol\OpenConnectionRequest2;
+use raklib\protocol\PacketReliability;
 use raklib\protocol\UnconnectedPing;
 use raklib\protocol\UnconnectedPong;
 use raklib\utils\InternetAddress;
+use raklib\protocol\Datagram;
 
 use pocketmine\network\mcpe\encryption\NetworkCipher;
 
@@ -46,6 +55,10 @@ class DownstreamListener
     /** @var LoginPacket $cachedLogin */
     private $cachedLogin;
 
+    /** @var int $sendSeqNumber */
+    private $sendSeqNumber = 0;
+
+
     /**
      * DownstreamListener constructor.
      * @param DownstreamSocket $socket
@@ -62,6 +75,7 @@ class DownstreamListener
 
     public function tick() : void{
         $this->downstream->receive($buffer, $address, $port);
+        if($buffer==null)return;
 
         if($this->raknetDone)$this->handleMCPE($buffer, $address, $port);
         $this->handleRaknet($buffer, $address, $port);
@@ -80,8 +94,9 @@ class DownstreamListener
              $ping->decode();
 
              $pong = new UnconnectedPong();
-             $pong->sendTime = $ping->sendTime;
-             $pong->serverName = $this->getPongInfo();
+             $pong->sendPingTime = $ping->sendPingTime;
+             $pong->serverName = "MCPE;§bsvile sucks;361;1.12.0;0;20;9214870599196236078;MCBE Proxy;Survival;";
+             $pong->serverId = 1;
              $pong->encode();
 
              $this->downstream->send($pong->getBuffer(), $this->address->ip, $this->address->port);
@@ -90,21 +105,24 @@ class DownstreamListener
              $request = new OpenConnectionRequest1($buffer);
              $request->decode();
 
-             if($request->protocol !== 10){
+             if($request->protocol !== 9){
                  $packet = new IncompatibleProtocolVersion();
                  $packet->protocolVersion = 10;
                  $packet->serverId = 1;
                  $packet->encode();
 
                  $this->downstream->send($packet->getBuffer(), $this->address->ip, $this->address->port);
+
                  break;
              }
 
+
              $reply = new OpenConnectionReply1();
              $reply->mtuSize = $request->mtuSize + 28;
-             $reply->serverId = 1;
+             $reply->serverID = 1;
+             $reply->encode();
 
-             $this->downstream->send($reply->getBuffer(), $this->address->ip, $this->address->port);
+             $this->downstream->send($reply->getBuffer(), $address, $port);
              break;
              case OpenConnectionRequest2::$ID;
              $request = new OpenConnectionRequest2($buffer);
@@ -114,14 +132,50 @@ class DownstreamListener
              $reply = new OpenConnectionReply2();
              $reply->mtuSize = $mtuSize;
              $reply->serverID = 1;
-             $reply->clientAddress = $this->address;
+             $reply->clientAddress = new InternetAddress($address, $port, 4);
              $reply->encode();
 
-             $this->downstream->send($reply->getBuffer(), $this->address->ip, $this->address->port);
-             $this->raknetDone = true;
+             $this->downstream->send($reply->getBuffer(), $address, $port);
 
-             $this->messageSender = new MessageSender(new InternetAddress($address, $port, 4), $this->downstream->socket);
              break;
+             default:
+                 if (($pid & Datagram::BITFLAG_VALID) !== 0) {
+                     $datagram = new Datagram($buffer);
+                     $datagram->decode();
+                     foreach($datagram->packets as $encapsulated){
+                         $pid = ord($encapsulated->buffer{0});
+
+                         switch($pid){
+                             case ConnectionRequest::$ID;
+                             $request = new ConnectionRequest($buffer);
+                             $request->decode();
+
+                             $pk = new ConnectionRequestAccepted();
+                             $pk->address = new InternetAddress($address, $port,4);
+                             $pk->sendPingTime = $request->sendPingTime;
+                             $pk->sendPongTime = $request->sendPingTime + 1; //hack
+                             $pk->encode();
+
+                             $encapsulated = new EncapsulatedPacket();
+                             $encapsulated->reliability = PacketReliability::UNRELIABLE;
+                             $encapsulated->orderChannel = 0;
+                             $encapsulated->buffer = $pk->getBuffer();
+
+                             $datagram = new Datagram();
+                             $datagram->packets[] = $encapsulated;
+                             $datagram->seqNumber = $this->sendSeqNumber++;
+                             $datagram->sendTime = time();
+                             $datagram->encode();
+                             $this->downstream->send($datagram->getBuffer(), $address, $port);
+                             break;
+                             case NewIncomingConnection::$ID;
+                             $this->raknetDone = true;
+                             break;
+                         }
+                     }
+                 }
+             break;
+
          }
     }
 
@@ -141,54 +195,50 @@ class DownstreamListener
                 if (($datagram = new Datagram($buffer)) instanceof Datagram) {
                     $datagram->decode();
                     foreach ($datagram->packets as $packet) {
-                        if ($packet->hasSplit) {
-                            $split = $this->decodeSplit($packet);
+                     /*   if ($packet->hasSplit) {
+                            $split = //TODO: decode of split
 
                             if ($split !== null) {
                                 $packet = $split;
                             }
+                        }*/
 
-                            $payload = substr($packet->getBuffer(), 1);
+                        $payload = substr($packet->buffer, 1);
 
-                            if($this->networkCipher !== null && $this->decryptPackets){
-                                $payload = $this->networkCipher->decrypt($payload);
-                            }
+                        if($this->networkCipher !== null && $this->decryptPackets){
+                            $payload = $this->networkCipher->decrypt($payload);
+                        }
 
-                            $stream = new PacketBatch(Zlib::decompress($payload));
-                            $mcpe = $stream->getPacket();
+                        $stream = new PacketBatch(Zlib::decompress($payload));
+                        $mcpe = $stream->getPacket();
 
-                            switch($mcpe::$NETWORK_ID){
-                                case LoginPacket::$NETWORK_ID;
-                                $mcpe->decode();
+                        switch($mcpe::$NETWORK_ID){
+                            case LoginPacket::$NETWORK_ID;
+                            $mcpe->decode();
 
-                                $this->cachedLogin = $mcpe;
-                                break;
-                            }
+                            $this->cachedLogin = $mcpe;
 
+                            $this->server->getLogger()->info($mcpe->username . " has joined [XUID: " . $mcpe->xuid . "]");
+
+                            //TODO: upstream connection
+
+
+                            break;
                         }
 
                     }
+
                 }
             }
         }
     }
 
+
     /**
      * @return string
      */
     public function getPongInfo() : string{
-        return implode(";",
-                [
-                    "MCPE",
-                    rtrim(addcslashes("MCPE Proxy", ";"), '\\'),
-                    354,
-                    "1.11",
-                    Server::getInstance()->downstreamConnected ? 1 : 0,
-                    1,
-                    1,
-                    'MCBE Proxy',
-                    'survival'
-                ]) . ";";
+        return "MCBE PROXY"  . ";" . "survival" . ";" . "void" . ";" . "0" . ";" . "1"  . ";" . Binary::writeLShort(19132) . "127.0.0.1" . ";";
     }
 
 }
