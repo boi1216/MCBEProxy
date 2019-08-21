@@ -76,6 +76,7 @@ class Server {
         $this->commandMap = new CommandMap($this);
         $this->scheduler = new Scheduler($this);
 
+        $this->getPluginManager()->loadScripts("scripts");
         $this->getPluginManager()->loadPlugins("plugins");
         $this->getPluginManager()->enablePlugins();
 

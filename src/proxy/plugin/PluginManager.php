@@ -18,6 +18,9 @@ class PluginManager {
     /** @var PluginBase[] $plugins */
     protected $plugins = [];
 
+    /** @var ScriptInterface[] $scripts */
+    protected $scripts = [];
+
     /**
      * PluginManager constructor.
      * @param Server $server
@@ -26,8 +29,56 @@ class PluginManager {
         $this->server = $server;
     }
 
+    /**
+     * @param string $directory
+     */
+    public function loadScripts(string $directory) {
+        $path = getcwd() . DIRECTORY_SEPARATOR . $directory;
+        if(!is_dir($path)) {
+            @mkdir($path);
+        }
+        foreach (glob($path . DIRECTORY_SEPARATOR . "*.php") as $script) {
+            $this->loadScript($script);
+        }
+    }
+
+    /**
+     * @param string $script
+     * @return bool
+     */
+    public function loadScript(string $script): bool {
+        try {
+            $class = require_once $script;
+        }
+        catch (\Exception $exception) {
+            $this->getServer()->getLogger()->error("Could not load script " . basename($script, ".php") . ": " . $exception->getMessage());
+            unset($class);
+            return false;
+        }
+
+        if(!$class instanceof ScriptInterface) {
+            $this->getServer()->getLogger()->error("Script must implement script interface!");
+            unset($class);
+            return false;
+        }
+
+        if(isset($this->scripts[$class->getName()])) {
+            $this->getServer()->getLogger()->error("Script {$class->getName()} already exists!");
+            unset($class);
+            return false;
+        }
+
+        $this->getServer()->getLogger()->info("Script $script loaded!");
+        $this->scripts[$class->getName()] = $class;
+        $class->load();
+        return true;
+    }
+
     public function loadPlugins(string $directory) {
         $path = getcwd() . DIRECTORY_SEPARATOR . $directory;
+        if(!is_dir($path)) {
+            @mkdir($path);
+        }
         foreach (glob($path . DIRECTORY_SEPARATOR . "*") as $pluginFolder) {
             if(file_exists($fileName = $pluginFolder . DIRECTORY_SEPARATOR . "plugin.yml") && is_file($fileName)) {
                 $this->loadPlugin($pluginFolder);
