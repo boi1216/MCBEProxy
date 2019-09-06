@@ -40,7 +40,7 @@
     "pocketmine/pocketmine-mp": "dev-master",
     "pocketmine/raklib": "dev-master",
     "pocketmine/spl": "dev-master",
-    "pocketmine/binaryutils": "^0.1.9",
+    "pocketmine/binaryutils": "dev-master",
     "pocketmine/nbt": "dev-master",
     "pocketmine/math": "dev-master",
     "pocketmine/snooze": "^0.1.0",
